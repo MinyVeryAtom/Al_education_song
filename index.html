@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MoodTune - 설문 기반 노래 추천</title>
+  <style>
+    :root {
+      --primary: #0066cc;
+      --primary-focus: #0071e3;
+      --primary-on-dark: #2997ff;
+      --ink: #1d1d1f;
+      --muted: #7a7a7a;
+      --hairline: #e0e0e0;
+      --canvas: #ffffff;
+      --parchment: #f5f5f7;
+      --pearl: #fafafc;
+      --dark: #272729;
+      --dark-2: #2a2a2c;
+      --black: #000000;
+      --shadow-product: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: "SF Pro Text", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 17px;
+      line-height: 1.47;
+      letter-spacing: -0.374px;
+    }
+
+    button,
+    a {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .global-nav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 30;
+      height: 44px;
+      background: rgba(0, 0, 0, 0.92);
+      color: #fff;
+      backdrop-filter: saturate(180%) blur(20px);
+    }
+
+    .nav-inner,
+    .sub-nav-inner,
+    .section-inner {
+      width: min(100%, 1440px);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .nav-inner {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
+      font-size: 21px;
+      font-weight: 600;
+      line-height: 1;
+      color: #fff;
+      text-decoration: none;
+      letter-spacing: 0.231px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .nav-links a {
+      color: #ccc;
+      text-decoration: none;
+      font-size: 12px;
+      line-height: 1;
+      letter-spacing: -0.12px;
+    }
+
+    .nav-links a:hover {
+      color: #fff;
+    }
+
+    .sub-nav {
+      position: fixed;
+      top: 44px;
+      inset-inline: 0;
+      z-index: 29;
+      height: 52px;
+      background: rgba(245, 245, 247, 0.82);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      backdrop-filter: saturate(180%) blur(20px);
+    }
+
+    .sub-nav-inner {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sub-title {
+      font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
+      font-size: 21px;
+      font-weight: 600;
+      line-height: 1.19;
+      letter-spacing: 0.231px;
+    }
+
+    .sub-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 14px;
+      line-height: 1.29;
+      letter-spacing: -0.224px;
+    }
+
+    .sub-actions a {
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 11px 22px;
+      border-radius: 9999px;
+      color: #fff;
+      background: var(--primary);
+      text-decoration: none;
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .pill:hover {
+      background: var(--primary-focus);
+    }
+
+    .pill:active,
+    .ghost-pill:active,
+    .option:active,
+    .song-card:active {
+      transform: scale(0.95);
+    }
+
+    .ghost-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 10px 22px;
+      border: 1px solid var(--primary);
+      border-radius: 9999px;
+      color: var(--primary);
+      background: transparent;
+      text-decoration: none;
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    main {
+      padding-top: 96px;
+    }
+
+    .tile {
+      min-height: calc(100vh - 96px);
+      padding: 80px 0;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .hero {
+      background: var(--canvas);
+      text-align: center;
+    }
+
+    .hero-stack {
+      width: min(100%, 980px);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
+      font-size: 76px;
+      font-weight: 600;
+      line-height: 1.05;
+      letter-spacing: -0.28px;
+    }
+
+    .lead {
+      margin-top: 14px;
+      font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0.196px;
+      color: #333;
+    }
+
+    .hero-actions {
+      margin-top: 32px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .product-visual {
+      width: min(760px, 92vw);
+      margin: 52px auto 0;
+      padding: 34px;
+      aspect-ratio: 16 / 8;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--parchment);
+      box-shadow: var(--shadow-product);
+    }
+
+    .headphones {
+      position: relative;
+      width: min(420px, 76vw);
+      aspect-ratio: 1.6;
+    }
+
+    .headband {
+      position: absolute;
+      left: 20%;
+      right: 20%;
+      top: 6%;
+      height: 70%;
+      border: 18px solid #1d1d1f;
+      border-bottom: 0;
+      border-radius: 999px 999px 0 0;
+    }
+
+    .cup {
+      position: absolute;
+      bottom: 8%;
+      width: 28%;
+      height: 58%;
+      border-radius: 36px;
+      background: #252527;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+
+    .cup::after {
+      content: "";
+      position: absolute;
+      inset: 15%;
+      border-radius: 26px;
+      background: #3a3a3c;
+    }
+
+    .cup.left {
+      left: 13%;
+    }
+
+    .cup.right {
+      right: 13%;
+    }
+
+    .survey-tile {
+      background: var(--parchment);
+    }
+
+    .survey-layout {
+      display: grid;
+      grid-template-columns: 0.78fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      margin-bottom: 14px;
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.29;
+      letter-spacing: -0.224px;
+    }
+
+    .section-title {
+      font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
+      font-size: 56px;
+      font-weight: 600;
+      line-height: 1.08;
+      letter-spacing: -0.28px;
+    }
+
+    .section-copy {
+      margin-top: 18px;
+      max-width: 560px;
+      color: #333;
+    }
+
+    .survey-panel {
+      background: var(--canvas);
+      border: 1px solid var(--hairline);
+      border-radius: 18px;
+      padding: 24px;
+    }
+
+    .progress {
+      height: 4px;
+      background: var(--parchment);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+
+    .progress span {
+      display: block;
+      width: 20%;
+      height: 100%;
+      background: var(--primary);
+      transition: width 260ms ease;
+    }
+
+    .question {
+      font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
+      font-size: 40px;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: 0;
+      margin-bottom: 24px;
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .option {
+      min-height: 92px;
+      padding: 18px;
+      border: 1px solid var(--hairline);
+      border-radius: 18px;
+      color: var(--ink);
+      background: var(--pearl);
+      text-align: left;
+      transition: transform 180ms ease, border 180ms ease, background 180ms ease;
+    }
+
+    .option:hover,
+    .option.selected {
+      border-color: var(--primary-focus);
+      background: #fff;
+    }
+
+    .option strong {
+      display: block;
+      font-weight: 600;
+      line-height: 1.24;
+    }
+
+    .option span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.43;
+      letter-spacing: -0.224px;
+    }
+
+    .survey-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .survey-controls .ghost-pill,
+    .survey-controls .pill {
+      flex: 1;
+    }
+
+    .results-tile {
+      background: var(--dark);
+      color: #fff;
+    }
+
+    .results-head {
+      text-align: center;
+      width: min(920px, 100%);
+      margin: 0 auto 48px;
+    }
+
+    .results-head .lead {
+      color: #ccc;
+    }
+
+    .tags {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      padding: 8px 14px;
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      font-size: 14px;
+      line-height: 1.29;
+      letter-spacing: -0.224px;
+    }
+
+    .song-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .song-card {
+      color: #fff;
+      transition: transform 180ms ease;
+    }
+
+    .album {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--dark-2);
+      box-shadow: var(--shadow-product);
+    }
+
+    .album-art {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
+      font-size: 58px;
+      font-weight: 600;
+      color: #fff;
+      background: #252527;
+    }
+
+    .album[data-tone="calm"] .album-art {
+      background: #7f8288;
+    }
+
+    .album[data-tone="warm"] .album-art {
+      background: #7a684c;
+    }
+
+    .album[data-tone="blue"] .album-art {
+      background: #141d29;
+    }
+
+    .album[data-tone="mono"] .album-art {
+      background: #333333;
+    }
+
+    .play {
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(210, 210, 215, 0.78);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+
+    .song-card h3 {
+      margin-top: 17px;
+      font-size: 17px;
+      font-weight: 600;
+      line-height: 1.24;
+      letter-spacing: -0.374px;
+    }
+
+    .song-card p {
+      color: #ccc;
+      font-size: 14px;
+      line-height: 1.43;
+      letter-spacing: -0.224px;
+      margin-top: 3px;
+    }
+
+    .song-card a {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--primary-on-dark);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .feature-tile {
+      background: var(--canvas);
+      text-align: center;
+    }
+
+    .feature-grid {
+      margin-top: 48px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .feature {
+      min-height: 220px;
+      padding: 24px;
+      border: 1px solid var(--hairline);
+      border-radius: 18px;
+      background: #fff;
+      text-align: left;
+    }
+
+    .feature h3 {
+      font-size: 21px;
+      font-weight: 600;
+      line-height: 1.19;
+      letter-spacing: 0.231px;
+      margin-bottom: 10px;
+    }
+
+    .feature p {
+      color: #333;
+    }
+
+    footer {
+      padding: 64px 24px;
+      background: var(--parchment);
+      color: #333;
+      font-size: 12px;
+      line-height: 1.5;
+      letter-spacing: -0.12px;
+    }
+
+    .footer-inner {
+      width: min(100%, 980px);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    footer strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    footer a {
+      display: block;
+      color: #333;
+      text-decoration: none;
+      margin: 6px 0;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 1068px) {
+      .song-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 833px) {
+      .nav-links,
+      .sub-actions a:not(.pill) {
+        display: none;
+      }
+
+      .survey-layout,
+      .feature-grid,
+      .footer-inner {
+        grid-template-columns: 1fr;
+      }
+
+      .tile {
+        padding: 56px 0;
+      }
+
+      .song-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .nav-inner,
+      .sub-nav-inner,
+      .section-inner {
+        padding-inline: 17px;
+      }
+
+      .brand,
+      .sub-title {
+        font-size: 18px;
+      }
+
+      .options,
+      .song-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .survey-controls {
+        flex-direction: column;
+      }
+
+      .product-visual {
+        aspect-ratio: 1.25;
+        padding: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="global-nav" aria-label="전체 메뉴">
+    <div class="nav-inner">
+      <a class="brand" href="#top">MoodTune</a>
+      <div class="nav-links">
+        <a href="#survey">Survey</a>
+        <a href="#results">Recommendation</a>
+        <a href="#features">Library</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="sub-nav">
+    <div class="sub-nav-inner">
+      <div class="sub-title">Music Recommendation</div>
+      <div class="sub-actions">
+        <a href="#survey">설문</a>
+        <a href="#results">추천 결과</a>
+        <a class="pill" href="#survey">시작하기</a>
+      </div>
+    </div>
+  </div>
+
+  <main id="top">
+    <section class="tile hero">
+      <div class="hero-stack">
+        <h1>지금 기분에 맞는 음악.</h1>
+        <p class="lead">몇 가지 짧은 질문에 답하면, 오늘의 감정과 상황에 어울리는 YouTube 검색 추천을 준비합니다.</p>
+        <div class="hero-actions">
+          <a class="pill" href="#survey">설문 시작하기</a>
+          <a class="ghost-pill" href="#results">추천 예시 보기</a>
+        </div>
+        <div class="product-visual" aria-label="MoodTune 오디오 비주얼">
+          <div class="headphones" aria-hidden="true">
+            <div class="headband"></div>
+            <div class="cup left"></div>
+            <div class="cup right"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tile survey-tile" id="survey">
+      <div class="section-inner survey-layout">
+        <div>
+          <span class="eyebrow">1분 설문</span>
+          <h2 class="section-title">고르는 시간은 줄이고, 듣는 시간은 길게.</h2>
+          <p class="section-copy">기분, 상황, 원하는 에너지, 장르를 묻고 간단한 점수 로직으로 가장 가까운 트랙을 골라냅니다.</p>
+        </div>
+
+        <div class="survey-panel" aria-live="polite">
+          <div class="progress"><span id="progressBar"></span></div>
+          <h2 class="question" id="questionText">지금 기분은 어떤가요?</h2>
+          <div class="options" id="options"></div>
+          <div class="survey-controls">
+            <button class="ghost-pill" type="button" id="prevBtn">이전</button>
+            <button class="pill" type="button" id="nextBtn">다음</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tile results-tile" id="results">
+      <div class="section-inner">
+        <div class="results-head">
+          <span class="eyebrow">Today's Selection</span>
+          <h2 class="section-title" id="resultTitle">오늘의 추천 플레이리스트</h2>
+          <p class="lead" id="resultCopy">차분하게 집중하고 싶은 순간을 위해, 잔잔하지만 너무 가라앉지 않는 곡들을 골랐어요.</p>
+          <div class="tags" id="resultTags">
+            <span class="tag">#Calm</span>
+            <span class="tag">#Focus</span>
+            <span class="tag">#Lo-Fi</span>
+          </div>
+        </div>
+        <div class="song-grid" id="songGrid"></div>
+      </div>
+    </section>
+
+    <section class="tile feature-tile" id="features">
+      <div class="section-inner">
+        <span class="eyebrow">MoodTune Core</span>
+        <h2 class="section-title">설문이 곧 플레이리스트가 됩니다.</h2>
+        <div class="feature-grid">
+          <article class="feature">
+            <h3>감정 기반</h3>
+            <p>신남, 차분함, 설렘, 우울함처럼 지금의 감정에 가장 가까운 음악 태그를 먼저 맞춥니다.</p>
+          </article>
+          <article class="feature">
+            <h3>상황 기반</h3>
+            <p>공부, 운동, 이동, 휴식처럼 사용자가 실제로 음악을 듣는 맥락을 추천 점수에 반영합니다.</p>
+          </article>
+          <article class="feature">
+            <h3>YouTube 연결</h3>
+            <p>추천 곡은 일반 YouTube 검색 링크로 연결되어 구독 없이 바로 관련 영상을 찾을 수 있습니다.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div>
+        <strong>MoodTune</strong>
+        <p>설문 기반 노래 추천 웹 서비스 프로토타입. Apple 스타일 디자인 가이드를 참고한 정적 HTML 페이지입니다.</p>
+      </div>
+      <div>
+        <strong>Service</strong>
+        <a href="#survey">Survey</a>
+        <a href="#results">Recommendation</a>
+      </div>
+      <div>
+        <strong>Music</strong>
+        <a href="https://www.youtube.com" target="_blank" rel="noreferrer">YouTube</a>
+        <a href="#features">Library</a>
+      </div>
+      <div>
+        <strong>Legal</strong>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const questions = [
+      {
+        key: "mood",
+        text: "지금 기분은 어떤가요?",
+        options: [
+          ["calm", "차분함", "호흡이 느려지는 음악"],
+          ["happy", "신남", "리듬이 가볍게 뛰는 음악"],
+          ["blue", "우울함", "감정을 천천히 풀어주는 음악"],
+          ["love", "설렘", "따뜻하고 반짝이는 음악"]
+        ]
+      },
+      {
+        key: "situation",
+        text: "지금 무엇을 하고 있나요?",
+        options: [
+          ["focus", "공부/작업", "흐름을 방해하지 않는 곡"],
+          ["move", "이동 중", "걷는 속도에 맞는 곡"],
+          ["rest", "휴식", "공간을 부드럽게 채우는 곡"],
+          ["workout", "운동", "에너지를 끌어올리는 곡"]
+        ]
+      },
+      {
+        key: "energy",
+        text: "원하는 에너지 수준은?",
+        options: [
+          ["low", "낮음", "잔잔하고 느슨하게"],
+          ["mid", "보통", "과하지 않게 균형 있게"],
+          ["high", "높음", "명확한 비트와 추진력"],
+          ["any", "상관없음", "추천에 맡기기"]
+        ]
+      },
+      {
+        key: "genre",
+        text: "선호하는 장르는?",
+        options: [
+          ["lofi", "Lo-Fi", "집중하기 좋은 질감"],
+          ["rnb", "R&B", "부드러운 그루브"],
+          ["pop", "Pop", "선명한 멜로디"],
+          ["indie", "Indie", "조금 다른 감성"]
+        ]
+      }
+    ];
+
+    const songs = [
+      { title: "Feather", artist: "Nujabes", mood: "calm", situation: "focus", energy: "low", genre: "lofi", tone: "calm", mark: "F" },
+      { title: "Aruarian Dance", artist: "Nujabes", mood: "calm", situation: "move", energy: "mid", genre: "lofi", tone: "calm", mark: "A" },
+      { title: "Luv(sic.) Part 3", artist: "Nujabes", mood: "calm", situation: "rest", energy: "low", genre: "lofi", tone: "mono", mark: "L" },
+      { title: "Ylang Ylang", artist: "FKJ", mood: "calm", situation: "rest", energy: "mid", genre: "rnb", tone: "warm", mark: "Y" },
+      { title: "Tadow", artist: "Masego & FKJ", mood: "happy", situation: "move", energy: "mid", genre: "rnb", tone: "warm", mark: "T" },
+      { title: "It Runs Through Me", artist: "Tom Misch", mood: "happy", situation: "move", energy: "mid", genre: "rnb", tone: "warm", mark: "I" },
+      { title: "Levitating", artist: "Dua Lipa", mood: "happy", situation: "workout", energy: "high", genre: "pop", tone: "blue", mark: "L" },
+      { title: "Can't Hold Us", artist: "Macklemore & Ryan Lewis", mood: "happy", situation: "workout", energy: "high", genre: "pop", tone: "mono", mark: "C" },
+      { title: "Good as Hell", artist: "Lizzo", mood: "happy", situation: "workout", energy: "high", genre: "pop", tone: "warm", mark: "G" },
+      { title: "everything i wanted", artist: "Billie Eilish", mood: "blue", situation: "rest", energy: "mid", genre: "pop", tone: "blue", mark: "E" },
+      { title: "Merry Christmas Mr. Lawrence", artist: "Ryuichi Sakamoto", mood: "blue", situation: "focus", energy: "low", genre: "indie", tone: "mono", mark: "M" },
+      { title: "Fourth of July", artist: "Sufjan Stevens", mood: "blue", situation: "rest", energy: "low", genre: "indie", tone: "mono", mark: "F" },
+      { title: "Holocene", artist: "Bon Iver", mood: "blue", situation: "rest", energy: "low", genre: "indie", tone: "calm", mark: "H" },
+      { title: "Lover", artist: "Taylor Swift", mood: "love", situation: "rest", energy: "mid", genre: "pop", tone: "warm", mark: "L" },
+      { title: "Best Part", artist: "Daniel Caesar feat. H.E.R.", mood: "love", situation: "rest", energy: "low", genre: "rnb", tone: "warm", mark: "B" },
+      { title: "Get You", artist: "Daniel Caesar", mood: "love", situation: "move", energy: "mid", genre: "rnb", tone: "warm", mark: "G" },
+      { title: "Sweet Disposition", artist: "The Temper Trap", mood: "love", situation: "move", energy: "high", genre: "indie", tone: "blue", mark: "S" },
+      { title: "Sunset Lover", artist: "Petit Biscuit", mood: "love", situation: "focus", energy: "mid", genre: "indie", tone: "calm", mark: "S" },
+      { title: "Weightless", artist: "Marconi Union", mood: "calm", situation: "focus", energy: "low", genre: "indie", tone: "blue", mark: "W" },
+      { title: "Blinding Lights", artist: "The Weeknd", mood: "happy", situation: "move", energy: "high", genre: "pop", tone: "blue", mark: "B" }
+    ];
+
+    let step = 0;
+    const answers = {};
+    const questionText = document.getElementById("questionText");
+    const optionsEl = document.getElementById("options");
+    const progressBar = document.getElementById("progressBar");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const songGrid = document.getElementById("songGrid");
+
+    function renderQuestion() {
+      const question = questions[step];
+      questionText.textContent = question.text;
+      progressBar.style.width = `${((step + 1) / questions.length) * 100}%`;
+      prevBtn.disabled = step === 0;
+      prevBtn.style.opacity = step === 0 ? "0.45" : "1";
+      nextBtn.textContent = step === questions.length - 1 ? "추천 보기" : "다음";
+      optionsEl.innerHTML = "";
+
+      question.options.forEach(([value, title, desc]) => {
+        const button = document.createElement("button");
+        button.className = `option ${answers[question.key] === value ? "selected" : ""}`;
+        button.type = "button";
+        button.innerHTML = `<strong>${title}</strong><span>${desc}</span>`;
+        button.addEventListener("click", () => {
+          answers[question.key] = value;
+          renderQuestion();
+        });
+        optionsEl.appendChild(button);
+      });
+    }
+
+    function scoreSong(song) {
+      const weights = { mood: 5, situation: 4, energy: 3, genre: 3 };
+      return Object.entries(weights).reduce((score, [key, weight]) => {
+        if (!answers[key] || answers[key] === "any") {
+          return score + 1;
+        }
+        return score + (song[key] === answers[key] ? weight : 0);
+      }, 0);
+    }
+
+    function renderResults() {
+      const selected = [...songs]
+        .sort((a, b) => {
+          const diff = scoreSong(b) - scoreSong(a);
+          if (diff !== 0) return diff;
+          return `${a.artist} ${a.title}`.localeCompare(`${b.artist} ${b.title}`);
+        })
+        .slice(0, 5);
+
+      const moodLabel = {
+        calm: "차분한",
+        happy: "신나는",
+        blue: "감성적인",
+        love: "설레는"
+      }[answers.mood] || "오늘의";
+
+      document.getElementById("resultTitle").textContent = `${moodLabel} 추천 플레이리스트`;
+      document.getElementById("resultCopy").textContent = "선택한 기분과 상황에 맞춰, 바로 들을 수 있는 곡들을 가까운 순서로 골랐어요.";
+      document.getElementById("resultTags").innerHTML = Object.values(answers)
+        .filter(Boolean)
+        .map((tag) => `<span class="tag">#${tag}</span>`)
+        .join("");
+
+      songGrid.innerHTML = selected.map((song) => {
+        const query = encodeURIComponent(`${song.artist} ${song.title}`);
+        return `
+          <article class="song-card">
+            <div class="album" data-tone="${song.tone}">
+              <div class="album-art">${song.mark}</div>
+              <div class="play" aria-hidden="true">▶</div>
+            </div>
+            <h3>${song.title}</h3>
+            <p>${song.artist}</p>
+            <a href="https://www.youtube.com/results?search_query=${query}" target="_blank" rel="noreferrer">YouTube에서 검색하기</a>
+          </article>
+        `;
+      }).join("");
+    }
+
+    prevBtn.addEventListener("click", () => {
+      if (step > 0) {
+        step -= 1;
+        renderQuestion();
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      const current = questions[step];
+      if (!answers[current.key]) {
+        answers[current.key] = current.options[0][0];
+      }
+
+      if (step < questions.length - 1) {
+        step += 1;
+        renderQuestion();
+      } else {
+        renderResults();
+        document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+      }
+    });
+
+    renderQuestion();
+    renderResults();
+  </script>
+</body>
+</html>
